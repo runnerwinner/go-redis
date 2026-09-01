@@ -1,13 +1,13 @@
 package config
 
 import (
-    "bufio"
-    "go-redis/lib/logger"
-    "io"
-    "os"
-    "reflect"
-    "strconv"
-    "strings"
+	"bufio"
+	"go-redis/lib/logger"
+	"io"
+	"os"
+	"reflect"
+	"strconv"
+	"strings"
 )
 
 // ServerProperties defines global config properties
@@ -19,6 +19,7 @@ type ServerProperties struct {
     MaxClients     int    `cfg:"maxclients"`
     RequirePass    string `cfg:"requirepass"`
     Databases      int    `cfg:"databases"`
+    ClusterReplicas int   `cfg:"cluster-replicas"`
 
     Peers []string `cfg:"peers"`
     Self  string   `cfg:"self"`
@@ -33,6 +34,7 @@ func init() {
         Bind:       "127.0.0.1",
         Port:       6379,
         AppendOnly: false,
+        ClusterReplicas: 100,
     }
 }
 

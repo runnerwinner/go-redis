@@ -3,6 +3,7 @@ package consistenthash
 import (
 	"hash/crc32"
 	"sort"
+	"strconv"
 )
 
 // HashFunc defines function to generate hash code
@@ -11,14 +12,26 @@ type HashFunc func(data []byte) uint32
 // NodeMap stores nodes and you can pick node from NodeMap
 type NodeMap struct {
 	hashFunc    HashFunc
+	replicas    int
 	nodeHashs   []int // sorted
 	nodehashMap map[int]string
 }
 
+const defaultReplicas = 100
+
 // NewNodeMap creates a new NodeMap
 func NewNodeMap(fn HashFunc) *NodeMap {
+	return NewNodeMapWithReplicas(defaultReplicas, fn)
+}
+
+// NewNodeMapWithReplicas creates a new NodeMap with virtual nodes
+func NewNodeMapWithReplicas(replicas int, fn HashFunc) *NodeMap {
+	if replicas <= 0 {
+		replicas = defaultReplicas
+	}
 	m := &NodeMap{
 		hashFunc:    fn,
+		replicas:    replicas,
 		nodehashMap: make(map[int]string),
 	}
 	if m.hashFunc == nil {
@@ -38,9 +51,12 @@ func (m *NodeMap) AddNode(keys ...string) {
 		if key == "" {
 			continue
 		}
-		hash := int(m.hashFunc([]byte(key)))
-		m.nodeHashs = append(m.nodeHashs, hash)
-		m.nodehashMap[hash] = key
+		for i := 0; i < m.replicas; i++ {
+			virtualKey := strconv.Itoa(i) + "-" + key
+			hash := int(m.hashFunc([]byte(virtualKey)))
+			m.nodeHashs = append(m.nodeHashs, hash)
+			m.nodehashMap[hash] = key
+		}
 	}
 	sort.Ints(m.nodeHashs)
 }

@@ -4,7 +4,6 @@ package cluster
 import (
 	"context"
 	"fmt"
-	pool "github.com/jolestar/go-commons-pool/v2"
 	"go-redis/config"
 	"go-redis/database"
 	databaseface "go-redis/interface/database"
@@ -14,6 +13,8 @@ import (
 	"go-redis/resp/reply"
 	"runtime/debug"
 	"strings"
+
+	pool "github.com/jolestar/go-commons-pool/v2"
 )
 
 // ClusterDatabase represents a node of godis cluster
@@ -33,13 +34,11 @@ func MakeClusterDatabase() *ClusterDatabase {
 		self: config.Properties.Self,
 
 		db:             database.NewStandaloneDatabase(),
-		peerPicker:     consistenthash.NewNodeMap(nil),
+		peerPicker:     consistenthash.NewNodeMapWithReplicas(config.Properties.ClusterReplicas, nil),
 		peerConnection: make(map[string]*pool.ObjectPool),
 	}
 	nodes := make([]string, 0, len(config.Properties.Peers)+1)
-	for _, peer := range config.Properties.Peers {
-		nodes = append(nodes, peer)
-	}
+	nodes = append(nodes, config.Properties.Peers...)
 	nodes = append(nodes, config.Properties.Self)
 	cluster.peerPicker.AddNode(nodes...)
 	ctx := context.Background()
