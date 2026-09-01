@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"go-redis/aof"
 	"go-redis/config"
 	"go-redis/interface/resp"
 	"go-redis/lib/logger"
@@ -14,6 +15,8 @@ import (
 // Database is a set of multiple database set
 type Database struct {
 	dbSet []*DB
+	// handle aof persistence
+	aofHandler *aof.AofHandler
 }
 
 // NewDatabase creates a redis database,
@@ -28,15 +31,31 @@ func NewDatabase() *Database {
 		singleDB.index = i
 		mdb.dbSet[i] = singleDB
 	}
+	if config.Properties.AppendOnly {
+		aofHandler, err := aof.NewAOFHandler(mdb)
+		if err != nil {
+			panic(err)
+		}
+		mdb.aofHandler = aofHandler
+		for _, db := range mdb.dbSet {
+			// avoid closure
+			singleDB := db
+			singleDB.addAof = func(line CmdLine) {
+				mdb.aofHandler.AddAof(singleDB.index, line)
+			}
+		}
+	}
 	return mdb
 }
 
 // Exec executes command
 // parameter `cmdLine` contains command and its arguments, for example: "set key value"
 func (mdb *Database) Exec(c resp.Connection, cmdLine [][]byte) (result resp.Reply) {
+
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Warn(fmt.Sprintf("error occurs: %v\n%s", err, string(debug.Stack())))
+			result = &reply.UnknownErrReply{}
 		}
 	}()
 
@@ -49,6 +68,9 @@ func (mdb *Database) Exec(c resp.Connection, cmdLine [][]byte) (result resp.Repl
 	}
 	// normal commands
 	dbIndex := c.GetDBIndex()
+	if dbIndex >= len(mdb.dbSet) {
+		return reply.MakeErrReply("ERR DB index is out of range")
+	}
 	selectedDB := mdb.dbSet[dbIndex]
 	return selectedDB.Exec(c, cmdLine)
 }

@@ -13,7 +13,8 @@ import (
 type DB struct {
 	index int
 	// key -> DataEntity
-	data dict.Dict
+	data   dict.Dict
+	addAof func(CmdLine)
 }
 
 // ExecFunc is interface for command executor
@@ -26,7 +27,8 @@ type CmdLine = [][]byte
 // makeDB create DB instance
 func makeDB() *DB {
 	db := &DB{
-		data: dict.MakeSyncDict(),
+		data:   dict.MakeSyncDict(),
+		addAof: func(line CmdLine) {},
 	}
 	return db
 }
@@ -43,7 +45,6 @@ func (db *DB) Exec(c resp.Connection, cmdLine [][]byte) resp.Reply {
 		return reply.MakeArgNumErrReply(cmdName)
 	}
 	fun := cmd.executor
-	//取 cmdLine [SET KEY VALUE ]中的 [KEY VALUE]
 	return fun(db, cmdLine[1:])
 }
 
@@ -52,7 +53,6 @@ func validateArity(arity int, cmdArgs [][]byte) bool {
 	if arity >= 0 {
 		return argNum == arity
 	}
-	// EXISTS K1 k2 k3 ... kn, arity = -2, argNum >= 2
 	return argNum >= -arity
 }
 
@@ -105,5 +105,4 @@ func (db *DB) Removes(keys ...string) (deleted int) {
 // Flush clean database
 func (db *DB) Flush() {
 	db.data.Clear()
-
 }
