@@ -70,9 +70,11 @@ func (dict *SyncDict) Remove(key string) (result int) {
 
 // Keys returns all keys in dict
 func (dict *SyncDict) Keys() []string {
-	result := make([]string, 0, dict.Len())
+	result := make([]string, dict.Len())
+	i := 0
 	dict.m.Range(func(key, value interface{}) bool {
-		result = append(result, key.(string))
+		result[i] = key.(string)
+		i++
 		return true
 	})
 	return result
@@ -106,7 +108,10 @@ func (dict *SyncDict) RandomDistinctKeys(limit int) []string {
 	dict.m.Range(func(key, value interface{}) bool {
 		result[i] = key.(string)
 		i++
-		return i != limit
+		if i == limit {
+			return false
+		}
+		return true
 	})
 	return result
 }

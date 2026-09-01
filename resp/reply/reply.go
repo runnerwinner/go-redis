@@ -53,23 +53,13 @@ func MakeMultiBulkReply(args [][]byte) *MultiBulkReply {
 func (r *MultiBulkReply) ToBytes() []byte {
 	argLen := len(r.Args)
 	var buf bytes.Buffer
-
-	buf.WriteString("*")
-	buf.WriteString(strconv.Itoa(argLen))
-	buf.WriteString(CRLF)
-
+	buf.WriteString("*" + strconv.Itoa(argLen) + CRLF)
 	for _, arg := range r.Args {
 		if arg == nil {
-			buf.WriteString("$-1")
-			buf.WriteString(CRLF)
-			continue
+			buf.WriteString("$-1" + CRLF)
+		} else {
+			buf.WriteString("$" + strconv.Itoa(len(arg)) + CRLF + string(arg) + CRLF)
 		}
-
-		buf.WriteString("$")
-		buf.WriteString(strconv.Itoa(len(arg)))
-		buf.WriteString(CRLF)
-		buf.Write(arg)
-		buf.WriteString(CRLF)
 	}
 	return buf.Bytes()
 }

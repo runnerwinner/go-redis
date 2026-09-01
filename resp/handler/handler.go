@@ -6,8 +6,10 @@ package handler
 
 import (
 	"context"
-	database2 "go-redis/database"
-	"go-redis/interface/database"
+	"go-redis/cluster"
+	"go-redis/config"
+	"go-redis/database"
+	databaseface "go-redis/interface/database"
 	"go-redis/lib/logger"
 	"go-redis/lib/sync/atomic"
 	"go-redis/resp/connection"
@@ -26,14 +28,20 @@ var (
 // RespHandler implements tcp.Handler and serves as a redis handler
 type RespHandler struct {
 	activeConn sync.Map // *client -> placeholder
-	db         database.Database
+	db         databaseface.Database
 	closing    atomic.Boolean // refusing new client and new request
 }
 
 // MakeHandler creates a RespHandler instance
 func MakeHandler() *RespHandler {
-	var db database.Database
-	db = database2.NewDatabase()
+	var db databaseface.Database
+	if config.Properties.Self != "" &&
+		len(config.Properties.Peers) > 0 {
+		db = cluster.MakeClusterDatabase()
+	} else {
+		db = database.NewStandaloneDatabase()
+	}
+
 	return &RespHandler{
 		db: db,
 	}

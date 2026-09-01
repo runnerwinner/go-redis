@@ -1,7 +1,7 @@
 package tcp
 
 /**
- * A echo server to test whether the server is functioning normally
+ * A echo handler to test whether the handler is functioning normally
  */
 
 import (
@@ -54,7 +54,7 @@ func (h *EchoHandler) Handle(ctx context.Context, conn net.Conn) {
 
 	reader := bufio.NewReader(conn)
 	for {
-		// may occurs: client EOF, client timeout, server early close
+		// may occurs: client EOF, client timeout, handler early close
 		msg, err := reader.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {

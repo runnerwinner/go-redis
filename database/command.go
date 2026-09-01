@@ -9,7 +9,6 @@ var cmdTable = make(map[string]*command)
 type command struct {
 	executor ExecFunc
 	arity    int // allow number of args, arity < 0 means len(args) >= -arity
-	flags    int
 }
 
 // RegisterCommand registers a new command

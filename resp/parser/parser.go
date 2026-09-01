@@ -126,13 +126,10 @@ func parse0(reader io.Reader, ch chan<- *Payload) {
 			// if sending finished
 			if state.finished() {
 				var result resp.Reply
-				switch state.msgType {
-				case '*':
+				if state.msgType == '*' {
 					result = reply.MakeMultiBulkReply(state.args)
-				case '$':
+				} else if state.msgType == '$' {
 					result = reply.MakeBulkReply(state.args[0])
-				default:
-					// 可选：忽略或记录未知类型
 				}
 				ch <- &Payload{
 					Data: result,
@@ -226,6 +223,14 @@ func parseSingleLineReply(msg []byte) (resp.Reply, error) {
 			return nil, errors.New("protocol error: " + string(msg))
 		}
 		result = reply.MakeIntReply(val)
+	default:
+		// parse as text protocol
+		strs := strings.Split(str, " ")
+		args := make([][]byte, len(strs))
+		for i, s := range strs {
+			args[i] = []byte(s)
+		}
+		result = reply.MakeMultiBulkReply(args)
 	}
 	return result, nil
 }
